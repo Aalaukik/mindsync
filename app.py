@@ -6,7 +6,7 @@ import time
 from src.cv_pipeline import EmotionClassifier
 from src.state_manager import CognitiveBuffer
 from src.llm_orchestrator import MindSyncOrchestrator
-from components.ui_elements import render_header, render_impact_metrics
+from components.ui_elements import render_impact_metrics
 
 # 1. Initialize session states safely
 if "buffer" not in st.session_state:
@@ -16,14 +16,10 @@ if "orchestrator" not in st.session_state:
 if "current_nudge" not in st.session_state:
     st.session_state.current_nudge = ""
 
-# Page Config for a wider, app-like feel
-st.set_page_config(layout="wide", page_title="MindSync Tutor", page_icon="🧠")
+# Page Config for a wider, immersive dashboard feel
+st.set_page_config(layout="wide", page_title="MindSync Dashboard", page_icon="🧠")
 
-# Mock module data
-CURRENT_TOPIC = "Data Structures: Hash Tables"
-CURRENT_TEXT = "A Hash Table uses a hash function to compute an index into an array of buckets or slots, from which the desired value can be found. It allows for highly efficient data retrieval."
-
-# 2. Updated Video Processor (Clean Feed, No Green Text)
+# 2. Updated Video Processor
 class EmotionProcessor(VideoProcessorBase):
     def __init__(self):
         self.classifier = EmotionClassifier()
@@ -36,19 +32,19 @@ class EmotionProcessor(VideoProcessorBase):
         if state:
             self.latest_state = state
             
-        # We removed cv2.putText here to keep the video feed clean and professional!
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-# 3. Render Header
-render_header()
+# 3. Clean Dashboard Header
+st.title("🧠 MindSync Engine")
+st.markdown("Real-time affective computing and generative interventions.")
+st.write("---")
 
-# 4. Modern Dashboard Layout
-col_video, col_content = st.columns([1, 2], gap="large")
+# 4. Pro-Layout (Video gets 2/3 of the screen, Analytics gets 1/3)
+col_video, col_analytics = st.columns([2, 1], gap="large")
 
 with col_video:
-    st.markdown("### 🎥 Affective Observer")
+    st.markdown("### 🎥 Edge Inference Feed")
     
-    # Initialize WebRTC with extreme performance constraints
     ctx = webrtc_streamer(
         key="mindsync-eye",
         video_processor_factory=EmotionProcessor,
@@ -61,42 +57,37 @@ with col_video:
             "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         }
     )
-    
-    # Dedicated placeholder for our external emotion metric
-    st.markdown("### 📊 Live Analytics")
+
+with col_analytics:
+    st.markdown("### 📊 Cognitive State")
+    # Clean, separate placeholder for the emotion state
     emotion_placeholder = st.empty()
-
-with col_content:
-    # Learning Material Card
-    with st.container(border=True):
-        st.markdown(f"## 📚 {CURRENT_TOPIC}")
-        st.write(CURRENT_TEXT)
+    emotion_placeholder.info("Awaiting camera stream...")
     
-    st.markdown("### 🧠 MindSync Mentor")
-    # Dedicated placeholder for the LLM interventions
+    st.markdown("### 💡 Orchestrator Output")
     nudge_placeholder = st.empty()
-    nudge_placeholder.info("✨ Flow state optimal. Keep going!")
+    nudge_placeholder.info("No friction detected.")
 
-# Render bottom metrics (so they appear before the loop locks the thread)
+st.write("---")
+# Render your bottom metrics (if you still want them)
 render_impact_metrics()
 
-# 5. Real-Time UI Synchronization Loop
-# This loop actively pulls the emotion from the video thread and updates the UI instantly
+# 5. High-Speed UI Synchronization Loop
 if ctx.state.playing:
     while True:
         if ctx.video_processor:
             current_state = ctx.video_processor.latest_state
             
-            # Update the separate Emotion Variable cleanly
+            # Snappy, stylized metric updates
             with emotion_placeholder.container():
                 if current_state in ["Confused", "Frustrated"]:
-                    st.error(f"**Cognitive State:** {current_state} 📉")
+                    st.error(f"## {current_state} 📉\n**Status:** High Cognitive Load")
                 elif current_state == "Focused":
-                    st.success(f"**Cognitive State:** {current_state} 🎯")
+                    st.success(f"## {current_state} 🎯\n**Status:** Flow State Optimal")
                 elif current_state == "Distracted":
-                    st.warning(f"**Cognitive State:** {current_state} 👀")
+                    st.warning(f"## {current_state} 👀\n**Status:** Attention Drifting")
                 else:
-                    st.info(f"**Cognitive State:** {current_state} 😐")
+                    st.info(f"## {current_state} 😐\n**Status:** Baseline")
             
             # Log to buffer
             st.session_state.buffer.add_state(current_state)
@@ -106,17 +97,18 @@ if ctx.state.playing:
             
             if needs_help:
                 with nudge_placeholder.container():
-                    with st.spinner("Analyzing friction and generating mental reset..."):
+                    with st.spinner("Orchestrator synthesizing mental reset..."):
+                        # Passing generic context since we removed the specific module text
                         nudge = st.session_state.orchestrator.generate_nudge(
                             emotion=emotion, 
-                            topic=CURRENT_TOPIC, 
-                            current_content=CURRENT_TEXT
+                            topic="Independent Work", 
+                            current_content="User is engaged in an active task."
                         )
                         st.session_state.current_nudge = nudge
             
-            # Display active nudge if one exists
+            # Display active nudge
             if st.session_state.current_nudge:
-                nudge_placeholder.success(f"**Intervention:** {st.session_state.current_nudge}")
+                nudge_placeholder.success(f"**Agent:** {st.session_state.current_nudge}")
 
-        # Sleep briefly to prevent the while-loop from maxing out the CPU
-        time.sleep(0.5)
+        # Sliced the delay down to 50ms for near-instant UI syncing
+        time.sleep(0.05)
