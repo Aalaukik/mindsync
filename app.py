@@ -54,10 +54,23 @@ with col1:
     st.write("---")
     
     # 4. Initialize WebRTC with new API arguments
+    # 4. Initialize WebRTC with extreme performance constraints
     ctx = webrtc_streamer(
         key="mindsync-eye",
         video_processor_factory=EmotionProcessor,
-        async_processing=True
+        async_processing=True,
+        # Force the browser to send a low-resolution feed (massive CPU savings)
+        media_stream_constraints={
+            "video": {
+                "width": {"ideal": 320},
+                "height": {"ideal": 240}
+            },
+            "audio": False  # Disable audio track processing overhead
+        },
+        # Add a public STUN server to ensure the WebRTC connection connects instantly
+        rtc_configuration={
+            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+        }
     )
 
 # 5. Safe Thread Syncing
