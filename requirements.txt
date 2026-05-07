@@ -1,0 +1,8 @@
+streamlit
+streamlit-webrtc
+opencv-python-headless
+tensorflow
+google-generativeai
+supabase
+python-dotenv
+numpy
