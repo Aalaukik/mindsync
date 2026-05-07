@@ -6,3 +6,4 @@ google-generativeai
 supabase
 python-dotenv
 tornado
+streamlit-option-menu

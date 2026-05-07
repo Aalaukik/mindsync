@@ -6,6 +6,7 @@ import time
 from src.cv_pipeline import EmotionClassifier
 from src.state_manager import CognitiveBuffer
 from src.llm_orchestrator import MindSyncOrchestrator
+from streamlit_option_menu import option_menu
 
 # 1. Initialize session states safely
 if "buffer" not in st.session_state:
@@ -19,10 +20,31 @@ if "current_nudge" not in st.session_state:
 st.set_page_config(layout="wide", page_title="MindSync Dashboard", page_icon="🧠")
 
 # --- NAVIGATION ---
-st.sidebar.title("🧭 Navigation")
-page = st.sidebar.radio("Select Page:", ["MindSync Engine", "About"])
-st.sidebar.write("---")
-st.sidebar.caption("MindSync v1.0 | Edge Inference Active")
+with st.sidebar:
+    st.markdown("<h2 style='text-align: center; letter-spacing: 2px;'>🧠 MINDSYNC</h2>", unsafe_allow_html=True)
+    st.write("---")
+    
+    page = option_menu(
+        menu_title=None,  # Hiding the title makes it look cleaner
+        options=["MindSync Engine", "About"],
+        icons=["camera-video", "info-circle"],  # Uses Bootstrap icons
+        default_index=0,
+        styles={
+            "container": {"padding": "0!important", "background-color": "transparent"},
+            "icon": {"font-size": "18px"}, 
+            "nav-link": {
+                "font-size": "16px", 
+                "text-align": "left", 
+                "margin": "0px", 
+                "padding": "12px",
+                "--hover-color": "rgba(255, 255, 255, 0.05)"
+            },
+            "nav-link-selected": {"background-color": "#4CAF50", "font-weight": "bold"},
+        }
+    )
+    
+    st.write("---")
+    st.caption("v1.0 | Edge Inference Active")
 
 
 # ==========================================
