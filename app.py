@@ -2,10 +2,11 @@ import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 import cv2
 import av
+import time
 from src.cv_pipeline import EmotionClassifier
 from src.state_manager import CognitiveBuffer
 from src.llm_orchestrator import MindSyncOrchestrator
-from components.ui_elements import render_header, render_mindsync_sidebar, render_impact_metrics
+from components.ui_elements import render_header, render_impact_metrics
 
 # 1. Initialize session states safely
 if "buffer" not in st.session_state:
@@ -14,20 +15,19 @@ if "orchestrator" not in st.session_state:
     st.session_state.orchestrator = MindSyncOrchestrator()
 if "current_nudge" not in st.session_state:
     st.session_state.current_nudge = ""
-if "current_state" not in st.session_state:
-    st.session_state.current_state = "Awaiting Camera..."
 
-st.set_page_config(layout="wide", page_title="MindSync Learning")
+# Page Config for a wider, app-like feel
+st.set_page_config(layout="wide", page_title="MindSync Tutor", page_icon="🧠")
 
-# Mock module data for context scraping
-CURRENT_TOPIC = "Data Structures"
-CURRENT_TEXT = "A Hash Table uses a hash function to compute an index into an array of buckets or slots, from which the desired value can be found."
+# Mock module data
+CURRENT_TOPIC = "Data Structures: Hash Tables"
+CURRENT_TEXT = "A Hash Table uses a hash function to compute an index into an array of buckets or slots, from which the desired value can be found. It allows for highly efficient data retrieval."
 
-# 2. Updated Video Processor (Fixes thread crash and deprecation warnings)
+# 2. Updated Video Processor (Clean Feed, No Green Text)
 class EmotionProcessor(VideoProcessorBase):
     def __init__(self):
         self.classifier = EmotionClassifier()
-        self.latest_state = "Neutral" # Store state locally in the thread
+        self.latest_state = "Neutral" 
         
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -36,65 +36,87 @@ class EmotionProcessor(VideoProcessorBase):
         if state:
             self.latest_state = state
             
-        # UI Transparency: Show tracking is active on the video feed
-        cv2.putText(img, f"MindSync Active - State: {self.latest_state}", (10, 30), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
-        # Must return an 'av' VideoFrame in the new API
+        # We removed cv2.putText here to keep the video feed clean and professional!
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # 3. Render Header
 render_header()
 
-col1, col2 = st.columns([3, 1])
+# 4. Modern Dashboard Layout
+col_video, col_content = st.columns([1, 2], gap="large")
 
-with col1:
-    st.subheader(f"Current Module: {CURRENT_TOPIC}")
-    st.write(CURRENT_TEXT)
-    st.write("---")
+with col_video:
+    st.markdown("### 🎥 Affective Observer")
     
-    # 4. Initialize WebRTC with new API arguments
-    # 4. Initialize WebRTC with extreme performance constraints
+    # Initialize WebRTC with extreme performance constraints
     ctx = webrtc_streamer(
         key="mindsync-eye",
         video_processor_factory=EmotionProcessor,
         async_processing=True,
-        # Force the browser to send a low-resolution feed (massive CPU savings)
         media_stream_constraints={
-            "video": {
-                "width": {"ideal": 320},
-                "height": {"ideal": 240}
-            },
-            "audio": False  # Disable audio track processing overhead
+            "video": {"width": {"ideal": 320}, "height": {"ideal": 240}},
+            "audio": False 
         },
-        # Add a public STUN server to ensure the WebRTC connection connects instantly
         rtc_configuration={
             "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         }
     )
-
-# 5. Safe Thread Syncing
-# If the video is running, safely extract the state from the processor into the main thread
-if ctx.video_processor:
-    detected_state = ctx.video_processor.latest_state
-    st.session_state.current_state = detected_state
-    st.session_state.buffer.add_state(detected_state)
-
-with col2:
-    # Check if intervention is needed based on the rolling buffer
-    needs_help, emotion = st.session_state.buffer.requires_intervention()
     
-    if needs_help:
-        with st.spinner("Generating mental reset..."):
-            nudge = st.session_state.orchestrator.generate_nudge(
-                emotion=emotion, 
-                topic=CURRENT_TOPIC, 
-                current_content=CURRENT_TEXT
-            )
-            st.session_state.current_nudge = nudge
-            
-    # Render Sidebar via components/ui_elements.py
-    render_mindsync_sidebar(st.session_state.current_nudge, st.session_state.current_state)
+    # Dedicated placeholder for our external emotion metric
+    st.markdown("### 📊 Live Analytics")
+    emotion_placeholder = st.empty()
 
-# Render bottom metrics
+with col_content:
+    # Learning Material Card
+    with st.container(border=True):
+        st.markdown(f"## 📚 {CURRENT_TOPIC}")
+        st.write(CURRENT_TEXT)
+    
+    st.markdown("### 🧠 MindSync Mentor")
+    # Dedicated placeholder for the LLM interventions
+    nudge_placeholder = st.empty()
+    nudge_placeholder.info("✨ Flow state optimal. Keep going!")
+
+# Render bottom metrics (so they appear before the loop locks the thread)
 render_impact_metrics()
+
+# 5. Real-Time UI Synchronization Loop
+# This loop actively pulls the emotion from the video thread and updates the UI instantly
+if ctx.state.playing:
+    while True:
+        if ctx.video_processor:
+            current_state = ctx.video_processor.latest_state
+            
+            # Update the separate Emotion Variable cleanly
+            with emotion_placeholder.container():
+                if current_state in ["Confused", "Frustrated"]:
+                    st.error(f"**Cognitive State:** {current_state} 📉")
+                elif current_state == "Focused":
+                    st.success(f"**Cognitive State:** {current_state} 🎯")
+                elif current_state == "Distracted":
+                    st.warning(f"**Cognitive State:** {current_state} 👀")
+                else:
+                    st.info(f"**Cognitive State:** {current_state} 😐")
+            
+            # Log to buffer
+            st.session_state.buffer.add_state(current_state)
+            
+            # Check for LLM trigger
+            needs_help, emotion = st.session_state.buffer.requires_intervention()
+            
+            if needs_help:
+                with nudge_placeholder.container():
+                    with st.spinner("Analyzing friction and generating mental reset..."):
+                        nudge = st.session_state.orchestrator.generate_nudge(
+                            emotion=emotion, 
+                            topic=CURRENT_TOPIC, 
+                            current_content=CURRENT_TEXT
+                        )
+                        st.session_state.current_nudge = nudge
+            
+            # Display active nudge if one exists
+            if st.session_state.current_nudge:
+                nudge_placeholder.success(f"**Intervention:** {st.session_state.current_nudge}")
+
+        # Sleep briefly to prevent the while-loop from maxing out the CPU
+        time.sleep(0.5)
