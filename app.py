@@ -11,9 +11,10 @@ from src.llm_orchestrator import MindSyncOrchestrator
 
 if "buffer" not in st.session_state:
     st.session_state.buffer = CognitiveBuffer()
-else:    
-    if not hasattr(st.session_state.buffer, 'buffer') or st.session_state.buffer.buffer.maxlen != 20:
+else:
+    if not hasattr(st.session_state.buffer, 'friction_start_time'):
         st.session_state.buffer = CognitiveBuffer()
+
 if "orchestrator" not in st.session_state:
     st.session_state.orchestrator = MindSyncOrchestrator()
 if "current_nudge" not in st.session_state:
@@ -40,7 +41,7 @@ with st.sidebar:
     
     page = option_menu(
         menu_title=None, 
-        options=["About", "MindSync Engine", "Session Analytics"], 
+        options=["About MindSync", "MindSync Engine", "Session Analytics"], 
         icons=["info-circle", "camera-video", "graph-up"],  
         default_index=0, 
         styles={
@@ -51,16 +52,32 @@ with st.sidebar:
         }
     )
     st.write("---")
-    st.caption("v1.2 | Edge Efficiency Mode Active")
+    st.caption("v1.3 | HD Frontend / Edge Backend")
 
-if page == "About":
-    st.title("ℹ️ The Purpose of MindSync")
+if page == "About MindSync":
+    st.title("🧠 MindSync: Bridging the Empathy Gap in AI")
     st.write("---")
-    st.markdown("""
-    ### The Empathy Gap in Software
-    Traditional digital learning platforms deliver content efficiently but are blind to the user's cognitive state. MindSync bridges this gap by giving interfaces **emotional intelligence**. 
     
-    Rather than waiting for a user to explicitly ask for help, MindSync uses privacy-first edge AI to continuously "read the room." When it detects friction, it triggers a generative AI orchestrator to provide a contextual mental reset, restoring the user's flow state without them ever clicking a button.
+    st.markdown("""
+    ### The Core Problem: Digital Isolation
+    Traditional digital learning platforms and productivity tools are highly efficient at delivering content, but they are entirely **blind to the user's cognitive state**. 
+    
+    When a student sitting in a physical classroom becomes confused or frustrated, a human tutor naturally reads their facial expressions and steps in to adjust the pace, offer encouragement, or explain the concept differently. A standard screen does not. It continues to present information blindly. This "empathy gap" leads to severe cognitive overload, feelings of isolation, and high drop-out rates in online education and remote work.
+
+    ### The MindSync Solution
+    MindSync was engineered to solve this by giving digital interfaces **emotional intelligence**. 
+    
+    Rather than waiting for a user to explicitly click a "Help" button, MindSync acts as a proactive, empathetic AI co-pilot. It uses a dual-pipeline architecture to continuously "read the room" and intervene exactly when needed.
+
+    ### How The Architecture Works
+    1. **Edge Computer Vision (The Observer):** MindSync uses a lightweight, privacy-first affective computing model running entirely on the edge. It tracks macro-expressions to determine if the user is in a state of Flow (Focused/Neutral) or Friction (Confused/Frustrated). 
+    2. **The Pure Stopwatch Buffer:** To prevent UI flicker and hardware lag from ruining the experience, an absolute-time cognitive buffer analyzes the data. If sustained friction is detected for exactly 1.0 seconds, the system locks.
+    3. **Generative LLM Orchestrator (The Tutor):** Once triggered, a highly optimized Gemini API call synthesizes a real-time "mental reset." This pedagogical nudge is designed specifically to de-escalate frustration and guide the user back into deep focus.
+
+    ### Key Features
+    * **Frictionless Assistance:** The system adapts to user needs organically, mirroring the experience of working alongside a seasoned human mentor.
+    * **Flow State Gamification:** Users are incentivized to maintain deep work through a real-time, time-based focus streak multiplier.
+    * **Post-Session Analytics:** Every session is tracked and visualized in a dedicated data dashboard, allowing users to review their cognitive load timelines and pinpoint exact moments of distraction.
     """)
 
 elif page == "MindSync Engine":
@@ -68,20 +85,21 @@ elif page == "MindSync Engine":
     class EmotionProcessor(VideoProcessorBase):
         def __init__(self):
             self.classifier = EmotionClassifier()
-            self.latest_state = "Neutral"             
-          
+            self.latest_state = "Neutral" 
             self.frame_skip = 10  
             self.frame_count = 0
             
-        def recv(self, frame):
+        def recv(self, frame):           
             img = frame.to_ndarray(format="bgr24")
-                        
-            if self.frame_count % self.frame_skip == 0:
-                state = self.classifier.predict_frame(img)
+            
+            if self.frame_count % self.frame_skip == 0:                
+                small_img = cv2.resize(img, (320, 240))
+                state = self.classifier.predict_frame(small_img)
                 if state:
                     self.latest_state = state
                     
             self.frame_count += 1
+                       
             return av.VideoFrame.from_ndarray(img, format="bgr24")
 
     st.title("🧠 MindSync Engine")
@@ -89,12 +107,20 @@ elif page == "MindSync Engine":
 
     col_video, col_analytics = st.columns([2, 1], gap="large")
 
-    with col_video:
+    with col_video:        
         ctx = webrtc_streamer(
             key="mindsync-eye",
             video_processor_factory=EmotionProcessor,
             async_processing=True,
-            media_stream_constraints={"video": {"width": {"ideal": 320}, "height": {"ideal": 240}}, "audio": False},
+            media_stream_constraints={
+                "video": {"width": {"ideal": 1280}, "height": {"ideal": 720}}, 
+                "audio": False
+            },
+            video_html_attrs={
+                "style": {"width": "100%", "transform": "scaleX(-1)", "border-radius": "10px"}, # Mirrors the feed!
+                "controls": False,
+                "autoPlay": True,
+            },
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
         )
 
@@ -116,9 +142,8 @@ elif page == "MindSync Engine":
                 current_time = time.time()
                 
                 clean_state = str(current_state).strip().title()
-                              
-                flow_states = ["Focused", "Neutral"]               
-              
+                flow_states = ["Focused", "Neutral"]
+                
                 with emotion_placeholder.container():
                     if clean_state in ["Confused", "Frustrated"]:
                         st.error(f"## {clean_state} 📉")
@@ -127,7 +152,7 @@ elif page == "MindSync Engine":
                     elif clean_state == "Distracted":
                         st.warning(f"## {clean_state} 👀")
                     else:
-                        st.info(f"## {clean_state} 😐")                
+                        st.info(f"## {clean_state} 😐")
                 
                 if clean_state in flow_states:
                     if st.session_state.focus_start_time is None:
@@ -139,20 +164,20 @@ elif page == "MindSync Engine":
                         st.session_state.max_focus_time = current_streak
                 else:
                     if st.session_state.unfocused_start_time is None:
-                        st.session_state.unfocused_start_time = current_time                        
-                    
+                        st.session_state.unfocused_start_time = current_time
+                        
                     if (current_time - st.session_state.unfocused_start_time) > 1.5:
                         st.session_state.focus_start_time = None
                         current_streak = 0
-                    else:                       
+                    else:
                         if st.session_state.focus_start_time is not None:
                             current_streak = int(current_time - st.session_state.focus_start_time)
                         else:
                             current_streak = 0
-         
+
                 with streak_placeholder.container():
                     st.metric("Consecutive Focus", f"{current_streak} sec", f"High Score: {st.session_state.max_focus_time} sec")
-               
+
                 if len(st.session_state.session_log) == 0 or (current_time - st.session_state.session_log[-1]["timestamp"] >= 1.0):
                     st.session_state.session_log.append({
                         "timestamp": current_time,
@@ -171,8 +196,8 @@ elif page == "MindSync Engine":
                                 emotion=emotion, topic="Independent Work", current_content="User is engaged in a task."
                             )
                             st.session_state.current_nudge = nudge
-                               
-                if current_streak > 20:
+                
+                if current_streak > 30:
                     st.session_state.current_nudge = ""
 
                 if st.session_state.current_nudge:
