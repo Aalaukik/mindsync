@@ -1,7 +1,7 @@
 import time
 
 class CognitiveBuffer:
-    def __init__(self, duration_sec=1.0, cooldown_seconds=20):
+    def __init__(self, duration_sec=1.0, cooldown_seconds=1):
         self.duration_sec = duration_sec
         self.confusion_threshold = 0.6 
         self.cooldown_seconds = cooldown_seconds
