@@ -2,7 +2,7 @@ import time
 from collections import deque
 
 class CognitiveBuffer:
-    def __init__(self, duration_sec=30, fps_approx=10):
+    def __init__(self, duration_sec=1, fps_approx=10):
         self.buffer = deque(maxlen=duration_sec * fps_approx)
         self.confusion_threshold = 0.6 
         
