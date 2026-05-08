@@ -19,13 +19,13 @@ st.set_page_config(layout="wide", page_title="MindSync Dashboard", page_icon="ðŸ
 
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; letter-spacing: 2px;'>ðŸ§  MINDSYNC</h2>", unsafe_allow_html=True)
-    st.write("---")
+    st.write("---")    
     
     page = option_menu(
         menu_title=None, 
-        options=["MindSync Engine", "About"],
-        icons=["camera-video", "info-circle"],  
-        default_index=0,
+        options=["About", "MindSync Engine"], 
+        icons=["info-circle", "camera-video"],  
+        default_index=0, 
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
             "icon": {"font-size": "18px"}, 
