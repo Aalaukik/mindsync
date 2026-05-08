@@ -29,7 +29,6 @@ if "session_start_time" not in st.session_state:
 if "interventions_triggered" not in st.session_state:
     st.session_state.interventions_triggered = 0
 
-
 st.set_page_config(layout="wide", page_title="MindSync Dashboard", page_icon="🧠")
 
 with st.sidebar:
@@ -49,7 +48,7 @@ with st.sidebar:
         }
     )
     st.write("---")
-    st.caption("v1.1 | Analytics Enabled")
+    st.caption("v1.2 | Edge Efficiency Mode Active")
 
 if page == "About":
     st.title("ℹ️ The Purpose of MindSync")
@@ -66,13 +65,20 @@ elif page == "MindSync Engine":
     class EmotionProcessor(VideoProcessorBase):
         def __init__(self):
             self.classifier = EmotionClassifier()
-            self.latest_state = "Neutral" 
+            self.latest_state = "Neutral"             
+          
+            self.frame_skip = 10  
+            self.frame_count = 0
             
         def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
-            state = self.classifier.predict_frame(img)
-            if state:
-                self.latest_state = state
+                        
+            if self.frame_count % self.frame_skip == 0:
+                state = self.classifier.predict_frame(img)
+                if state:
+                    self.latest_state = state
+                    
+            self.frame_count += 1
             return av.VideoFrame.from_ndarray(img, format="bgr24")
 
     st.title("🧠 MindSync Engine")
@@ -104,12 +110,12 @@ elif page == "MindSync Engine":
         while True:
             if ctx.video_processor:
                 current_state = ctx.video_processor.latest_state
-                current_time = time.time()                
-               
+                current_time = time.time()
+                
                 clean_state = str(current_state).strip().title()
-                                
-                flow_states = ["Focused", "Neutral"]                
-           
+                              
+                flow_states = ["Focused", "Neutral"]               
+              
                 with emotion_placeholder.container():
                     if clean_state in ["Confused", "Frustrated"]:
                         st.error(f"## {clean_state} 📉")
@@ -119,11 +125,11 @@ elif page == "MindSync Engine":
                         st.warning(f"## {clean_state} 👀")
                     else:
                         st.info(f"## {clean_state} 😐")                
-               
+                
                 if clean_state in flow_states:
                     if st.session_state.focus_start_time is None:
                         st.session_state.focus_start_time = current_time
-                    st.session_state.unfocused_start_time = None 
+                    st.session_state.unfocused_start_time = None  
                     
                     current_streak = int(current_time - st.session_state.focus_start_time)
                     if current_streak > st.session_state.max_focus_time:
@@ -131,26 +137,26 @@ elif page == "MindSync Engine":
                 else:
                     if st.session_state.unfocused_start_time is None:
                         st.session_state.unfocused_start_time = current_time                        
-                   
+                    
                     if (current_time - st.session_state.unfocused_start_time) > 1.5:
                         st.session_state.focus_start_time = None
                         current_streak = 0
-                    else:                        
+                    else:                       
                         if st.session_state.focus_start_time is not None:
                             current_streak = int(current_time - st.session_state.focus_start_time)
                         else:
                             current_streak = 0
-               
+         
                 with streak_placeholder.container():
                     st.metric("Consecutive Focus", f"{current_streak} sec", f"High Score: {st.session_state.max_focus_time} sec")
-                
+               
                 if len(st.session_state.session_log) == 0 or (current_time - st.session_state.session_log[-1]["timestamp"] >= 1.0):
                     st.session_state.session_log.append({
                         "timestamp": current_time,
                         "time_elapsed": round(current_time - st.session_state.session_start_time, 1),
                         "state": clean_state 
-                    })                
-               
+                    })
+                
                 st.session_state.buffer.add_state(clean_state)
                 needs_help, emotion = st.session_state.buffer.requires_intervention()
                 
@@ -161,8 +167,8 @@ elif page == "MindSync Engine":
                             nudge = st.session_state.orchestrator.generate_nudge(
                                 emotion=emotion, topic="Independent Work", current_content="User is engaged in a task."
                             )
-                            st.session_state.current_nudge = nudge                
-                
+                            st.session_state.current_nudge = nudge
+                               
                 if current_streak > 5:
                     st.session_state.current_nudge = ""
 
@@ -186,7 +192,7 @@ elif page == "Session Analytics":
         emotion_weights = {"Focused": 3, "Neutral": 2, "Distracted": 1, "Confused": 0, "Frustrated": 0}
         df["Cognitive Score"] = df["state"].map(emotion_weights)
         
-        total_time = df["time_elapsed"].max()        
+        total_time = df["time_elapsed"].max()
         focus_time = len(df[df["state"].isin(["Focused", "Neutral"])]) 
         
         col1, col2, col3 = st.columns(3)
