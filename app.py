@@ -87,7 +87,7 @@ elif page == "MindSync Engine":
             self.classifier = EmotionClassifier()
             self.latest_state = "Neutral" 
                        
-            self.frame_skip = 10  
+            self.frame_skip = 5 
             self.frame_count = 0
             
         def recv(self, frame):           
