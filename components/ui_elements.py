@@ -1,4 +1,3 @@
-# components/ui_elements.py
 import streamlit as st
 
 def render_header():
@@ -14,17 +13,15 @@ def render_mindsync_sidebar(current_nudge: str, current_state: str):
     """
     Renders the non-intrusive sidebar for MindSync interventions.
     """
-    st.sidebar.title("MindSync Mentor")
-    
-    # Display the current cognitive state detected by the CV pipeline
+    st.sidebar.title("MindSync Mentor")    
+   
     if current_state:
         st.sidebar.markdown(f"**Current State:** `{current_state}`")
     else:
         st.sidebar.markdown("**Current State:** `Awaiting Camera...`")
         
-    st.sidebar.divider()
+    st.sidebar.divider()    
     
-    # Display the active pedagogical nudge
     st.sidebar.subheader("Active Nudge")
     if current_nudge:
         st.sidebar.info(current_nudge)
@@ -38,16 +35,14 @@ def render_impact_metrics(cr_control: float = 45.0, cr_experimental: float = 60.
     """
     st.sidebar.divider()
     st.sidebar.subheader("Strategic Impact Metrics")
-    
-    # Calculate Persistence Lift
+       
     if cr_control > 0:
         persistence_lift = ((cr_experimental - cr_control) / cr_control) * 100
     else:
         persistence_lift = 0.0
 
     st.sidebar.latex(r"Persistence Lift = \frac{CR_{exp} - CR_{ctrl}}{CR_{ctrl}} \times 100")
-    
-    # Display metrics using Streamlit's native metric component
+        
     col1, col2 = st.sidebar.columns(2)
     col1.metric("Control CR", f"{cr_control}%")
     col2.metric("Experimental CR", f"{cr_experimental}%")

@@ -3,12 +3,11 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 import cv2
 import av
 import time
+from streamlit_option_menu import option_menu
 from src.cv_pipeline import EmotionClassifier
 from src.state_manager import CognitiveBuffer
 from src.llm_orchestrator import MindSyncOrchestrator
-from streamlit_option_menu import option_menu
 
-# 1. Initialize session states safely
 if "buffer" not in st.session_state:
     st.session_state.buffer = CognitiveBuffer()
 if "orchestrator" not in st.session_state:
@@ -16,18 +15,16 @@ if "orchestrator" not in st.session_state:
 if "current_nudge" not in st.session_state:
     st.session_state.current_nudge = ""
 
-# Page Config for a wider, immersive dashboard feel
 st.set_page_config(layout="wide", page_title="MindSync Dashboard", page_icon="🧠")
 
-# --- NAVIGATION ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; letter-spacing: 2px;'>🧠 MINDSYNC</h2>", unsafe_allow_html=True)
     st.write("---")
     
     page = option_menu(
-        menu_title=None,  # Hiding the title makes it look cleaner
+        menu_title=None, 
         options=["MindSync Engine", "About"],
-        icons=["camera-video", "info-circle"],  # Uses Bootstrap icons
+        icons=["camera-video", "info-circle"],  
         default_index=0,
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
@@ -46,13 +43,8 @@ with st.sidebar:
     st.write("---")
     st.caption("v1.0 | Edge Inference Active")
 
-
-# ==========================================
-# PAGE 1: MINDSYNC ENGINE
-# ==========================================
 if page == "MindSync Engine":
     
-    # 2. Updated Video Processor
     class EmotionProcessor(VideoProcessorBase):
         def __init__(self):
             self.classifier = EmotionClassifier()
@@ -67,12 +59,10 @@ if page == "MindSync Engine":
                 
             return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-    # 3. Clean Dashboard Header
     st.title("🧠 MindSync Engine")
     st.markdown("Real-time affective computing and generative interventions.")
     st.write("---")
 
-    # 4. Pro-Layout (Video gets 2/3 of the screen, Analytics gets 1/3)
     col_video, col_analytics = st.columns([2, 1], gap="large")
 
     with col_video:
@@ -93,7 +83,6 @@ if page == "MindSync Engine":
 
     with col_analytics:
         st.markdown("### 📊 Cognitive State")
-        # Clean, separate placeholder for the emotion state
         emotion_placeholder = st.empty()
         emotion_placeholder.info("Awaiting camera stream...")
         
@@ -101,13 +90,11 @@ if page == "MindSync Engine":
         nudge_placeholder = st.empty()
         nudge_placeholder.info("No friction detected.")
 
-    # 5. High-Speed UI Synchronization Loop
     if ctx and ctx.state.playing:
         while True:
             if ctx.video_processor:
                 current_state = ctx.video_processor.latest_state
                 
-                # Snappy, stylized metric updates
                 with emotion_placeholder.container():
                     if current_state in ["Confused", "Frustrated"]:
                         st.error(f"## {current_state} 📉\n**Status:** High Cognitive Load")
@@ -118,10 +105,8 @@ if page == "MindSync Engine":
                     else:
                         st.info(f"## {current_state} 😐\n**Status:** Baseline")
                 
-                # Log to buffer
                 st.session_state.buffer.add_state(current_state)
                 
-                # Check for LLM trigger
                 needs_help, emotion = st.session_state.buffer.requires_intervention()
                 
                 if needs_help:
@@ -134,34 +119,30 @@ if page == "MindSync Engine":
                             )
                             st.session_state.current_nudge = nudge
                 
-                # Display active nudge
                 if st.session_state.current_nudge:
                     nudge_placeholder.success(f"**Agent:** {st.session_state.current_nudge}")
 
-            # 50ms delay for near-instant UI syncing
             time.sleep(0.05) 
 
-
-# ==========================================
-# PAGE 2: ABOUT
-# ==========================================
 elif page == "About":
-    st.title("ℹ️ About MindSync")
+    st.title("ℹ️ The Purpose of MindSync")
     st.write("---")
     
     st.markdown("""
-    ### System Architecture
-    MindSync is a production-oriented affective computing framework designed to close the feedback loop between human cognitive states and generative AI. 
+    ### The Core Problem: The Empathy Gap in Software
+    Traditional digital learning platforms and productivity tools are highly efficient at delivering content, but they are entirely blind to the user's cognitive state. 
     
-    Rather than relying on explicit user prompts, this system utilizes a two-stage pipeline:
+    When a student sitting in a classroom becomes confused or frustrated, a human tutor naturally reads their body language and steps in to adjust the pace or explain the concept differently. A standard screen does not. It continues to present information blindly. This "empathy gap" leads to isolation, severe cognitive overload, and high drop-out rates in online education.
+
+    ### The MindSync Solution
+    MindSync was built to bridge this gap by giving digital interfaces **emotional intelligence**. 
     
-    1. **Stage 1: The Affective Observer (Edge Inference)**
-    A lightweight computer vision pipeline (MobileNetV2) runs at the edge. It continuously monitors facial micro-expressions, translating visual data into distinct cognitive states (Focused, Distracted, Confused, Frustrated, Neutral). To optimize for latency and privacy, inferences are made without saving or transmitting high-definition video frames to the cloud.
+    Rather than waiting for a user to explicitly ask for help, MindSync acts as a proactive, empathetic co-pilot. It uses lightweight, privacy-first edge AI to continuously "read the room." When it detects that a user has hit a wall of friction—such as sustained confusion or distraction—it automatically triggers a generative AI orchestrator.
+
+    ### How It Improves Outcomes
+    By observing user states in real-time, MindSync achieves three critical improvements:
     
-    2. **Stage 2: The LLM Orchestrator (Generative Interventions)**
-    A state manager buffers the cognitive data to prevent noisy interventions. When a sustained state of friction is detected, the Orchestrator triggers an LLM to synthesize highly contextual nudges designed to seamlessly guide the user back into an optimal flow state.
-    
-    ### Future Scope
-    * **Sensor Fusion:** Exploring the integration of spatial data or keystroke dynamics to enhance the confidence score of the affective observer.
-    * **Agentic Orchestration:** Allowing the LLM to trigger active software state changes rather than just passive text nudges.
+    * **1. Catching Friction Early:** It identifies confusion exactly when it starts, preventing it from spiraling into frustration or task abandonment.
+    * **2. Restoring the Flow State:** When an intervention is needed, the system generates a highly contextual "mental reset"—a pedagogical nudge designed specifically to de-escalate frustration and guide the user back into deep focus.
+    * **3. Frictionless Assistance:** The user never has to click a "Help" button. The system adapts to their needs organically, mirroring the experience of working alongside a seasoned human mentor.
     """)

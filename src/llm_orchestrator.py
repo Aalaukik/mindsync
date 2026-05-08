@@ -5,7 +5,6 @@ import streamlit as st
 
 load_dotenv()
 
-# Fetch API key: Check Streamlit secrets first, then fall back to local OS environment
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except (FileNotFoundError, KeyError):
@@ -15,10 +14,8 @@ genai.configure(api_key=api_key)
 
 class MindSyncOrchestrator:
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-2.5-flash') # Efficient edge-friendly model
-        
-    def generate_nudge(self, emotion, topic, current_content):
-        # The MindSync Prompt
+        self.model = genai.GenerativeModel('gemini-2.5-flash')         
+    def generate_nudge(self, emotion, topic, current_content):       
         system_prompt = f"""
         You are the MindSync Mentor. You have noticed the student is {emotion} while studying {topic}. 
         Do not be overbearing. Briefly offer a 'Mental Reset'-this could be a simplified analogy, a quick hint, or a gentle nudge to refocus. 
