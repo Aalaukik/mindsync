@@ -172,7 +172,7 @@ elif page == "MindSync Engine":
                             )
                             st.session_state.current_nudge = nudge
                                
-                if current_streak > 5:
+                if current_streak > 20:
                     st.session_state.current_nudge = ""
 
                 if st.session_state.current_nudge:
