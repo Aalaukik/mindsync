@@ -19,7 +19,7 @@ st.set_page_config(layout="wide", page_title="MindSync Dashboard", page_icon="�
 
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; letter-spacing: 2px;'>🧠 MINDSYNC</h2>", unsafe_allow_html=True)
-    st.write("---")    
+    st.write("---")
     
     page = option_menu(
         menu_title=None, 
@@ -43,88 +43,7 @@ with st.sidebar:
     st.write("---")
     st.caption("v1.0 | Edge Inference Active")
 
-if page == "MindSync Engine":
-    
-    class EmotionProcessor(VideoProcessorBase):
-        def __init__(self):
-            self.classifier = EmotionClassifier()
-            self.latest_state = "Neutral" 
-            
-        def recv(self, frame):
-            img = frame.to_ndarray(format="bgr24")
-            state = self.classifier.predict_frame(img)
-            
-            if state:
-                self.latest_state = state
-                
-            return av.VideoFrame.from_ndarray(img, format="bgr24")
-
-    st.title("🧠 MindSync Engine")
-    st.markdown("Real-time affective computing and generative interventions.")
-    st.write("---")
-
-    col_video, col_analytics = st.columns([2, 1], gap="large")
-
-    with col_video:
-        st.markdown("### 🎥 Edge Inference Feed")
-        
-        ctx = webrtc_streamer(
-            key="mindsync-eye",
-            video_processor_factory=EmotionProcessor,
-            async_processing=True,
-            media_stream_constraints={
-                "video": {"width": {"ideal": 320}, "height": {"ideal": 240}},
-                "audio": False 
-            },
-            rtc_configuration={
-                "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-            }
-        )
-
-    with col_analytics:
-        st.markdown("### 📊 Cognitive State")
-        emotion_placeholder = st.empty()
-        emotion_placeholder.info("Awaiting camera stream...")
-        
-        st.markdown("### 💡 Orchestrator Output")
-        nudge_placeholder = st.empty()
-        nudge_placeholder.info("No friction detected.")
-
-    if ctx and ctx.state.playing:
-        while True:
-            if ctx.video_processor:
-                current_state = ctx.video_processor.latest_state
-                
-                with emotion_placeholder.container():
-                    if current_state in ["Confused", "Frustrated"]:
-                        st.error(f"## {current_state} 📉\n**Status:** High Cognitive Load")
-                    elif current_state == "Focused":
-                        st.success(f"## {current_state} 🎯\n**Status:** Flow State Optimal")
-                    elif current_state == "Distracted":
-                        st.warning(f"## {current_state} 👀\n**Status:** Attention Drifting")
-                    else:
-                        st.info(f"## {current_state} 😐\n**Status:** Baseline")
-                
-                st.session_state.buffer.add_state(current_state)
-                
-                needs_help, emotion = st.session_state.buffer.requires_intervention()
-                
-                if needs_help:
-                    with nudge_placeholder.container():
-                        with st.spinner("Orchestrator synthesizing mental reset..."):
-                            nudge = st.session_state.orchestrator.generate_nudge(
-                                emotion=emotion, 
-                                topic="Independent Work", 
-                                current_content="User is engaged in an active task."
-                            )
-                            st.session_state.current_nudge = nudge
-                
-                if st.session_state.current_nudge:
-                    nudge_placeholder.success(f"**Agent:** {st.session_state.current_nudge}")
-
-            time.sleep(0.05) 
-
-elif page == "About":
+if page == "About":
     st.title("ℹ️ The Purpose of MindSync")
     st.write("---")
     
@@ -146,3 +65,9 @@ elif page == "About":
     * **2. Restoring the Flow State:** When an intervention is needed, the system generates a highly contextual "mental reset"—a pedagogical nudge designed specifically to de-escalate frustration and guide the user back into deep focus.
     * **3. Frictionless Assistance:** The user never has to click a "Help" button. The system adapts to their needs organically, mirroring the experience of working alongside a seasoned human mentor.
     """)
+
+elif page == "MindSync Engine":
+    
+    class EmotionProcessor(VideoProcessorBase):
+        def __init__(self):
+            self.classifier = EmotionClassifier()

@@ -2,9 +2,9 @@ import time
 from collections import deque
 
 class CognitiveBuffer:
-    def __init__(self, duration_sec=1, fps_approx=10, cooldown_seconds=15):       
+    def __init__(self, duration_sec=1, fps_approx=10, cooldown_seconds=15):
         self.buffer = deque(maxlen=duration_sec * fps_approx)
-        self.confusion_threshold = 0.6         
+        self.confusion_threshold = 0.6 
         
         self.cooldown_seconds = cooldown_seconds
         self.last_trigger_time = 0
@@ -16,19 +16,23 @@ class CognitiveBuffer:
     def requires_intervention(self):
         current_time = time.time()        
         
-        if (current_time - self.last_trigger_time) < self.cooldown_seconds:            
+        if not hasattr(self, 'last_trigger_time'):
+            self.last_trigger_time = 0
+            self.cooldown_seconds = 15        
+       
+        if (current_time - self.last_trigger_time) < self.cooldown_seconds:
             return False, None
-        
+       
         if len(self.buffer) < self.buffer.maxlen * 0.5:
             return False, None             
-       
+     
         confused_count = sum(1 for s in self.buffer if s in ['Confused', 'Frustrated'])
-        ratio = confused_count / len(self.buffer)
-                
-        if ratio >= self.confusion_threshold:                     
+        ratio = confused_count / len(self.buffer)        
+        
+        if ratio >= self.confusion_threshold:            
+            print(f"🔥 FRICTION DETECTED! Locking API for {self.cooldown_seconds} seconds.")
             self.last_trigger_time = current_time
             self.buffer.clear()
-            
             return True, "Confused/Frustrated"
             
         return False, None
