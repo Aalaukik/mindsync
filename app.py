@@ -85,18 +85,23 @@ elif page == "MindSync Engine":
     class EmotionProcessor(VideoProcessorBase):
         def __init__(self):
             self.classifier = EmotionClassifier()
-            self.latest_state = "Neutral"             
-          
-            self.frame_skip = 5  
+            self.latest_state = "Neutral" 
+                       
+            self.frame_skip = 10  
             self.frame_count = 0
             
-        def recv(self, frame):            
+        def recv(self, frame):           
             img = frame.to_ndarray(format="bgr24")
             
-            if self.frame_count % self.frame_skip == 0:                
-                small_img = cv2.resize(img, (426, 240))
+            if self.frame_count % self.frame_skip == 0:
+                h, w, _ = img.shape                
+               
+                start_x = (w - h) // 2
+                square_img = img[:, start_x : start_x + h] 
                                 
-                state = self.classifier.predict_frame(small_img)
+                ml_ready_img = cv2.resize(square_img, (224, 224))           
+                                
+                state = self.classifier.predict_frame(ml_ready_img)
                 if state:
                     self.latest_state = state
                     
