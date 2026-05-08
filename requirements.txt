@@ -7,3 +7,4 @@ supabase
 python-dotenv
 tornado
 streamlit-option-menu
+pandas
