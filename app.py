@@ -161,9 +161,9 @@ elif page == "MindSync Engine":
                             nudge = st.session_state.orchestrator.generate_nudge(
                                 emotion=emotion, topic="Independent Work", current_content="User is engaged in a task."
                             )
-                            st.session_state.current_nudge = nudge
+                            st.session_state.current_nudge = nudge                
                 
-                if clean_state in flow_states:
+                if current_streak > 5:
                     st.session_state.current_nudge = ""
 
                 if st.session_state.current_nudge:
