@@ -16,10 +16,12 @@ if "orchestrator" not in st.session_state:
 if "current_nudge" not in st.session_state:
     st.session_state.current_nudge = ""
 
-if "focus_frames" not in st.session_state:
-    st.session_state.focus_frames = 0
-if "max_focus_frames" not in st.session_state:
-    st.session_state.max_focus_frames = 0
+if "focus_start_time" not in st.session_state:
+    st.session_state.focus_start_time = None
+if "unfocused_start_time" not in st.session_state:
+    st.session_state.unfocused_start_time = None
+if "max_focus_time" not in st.session_state:
+    st.session_state.max_focus_time = 0
 if "session_log" not in st.session_state:
     st.session_state.session_log = []
 if "session_start_time" not in st.session_state:
@@ -88,11 +90,10 @@ elif page == "MindSync Engine":
 
     with col_analytics:
         st.markdown("### 📊 Cognitive State")
-        emotion_placeholder = st.empty()        
+        emotion_placeholder = st.empty()
         
         st.markdown("### 🔥 Flow Streak")
         streak_placeholder = st.empty()
-        streak_placeholder.metric("Consecutive Focus", "0 sec", "High Score: 0 sec")
         
         st.markdown("### 💡 Orchestrator Output")
         nudge_placeholder = st.empty()
@@ -102,7 +103,7 @@ elif page == "MindSync Engine":
         while True:
             if ctx.video_processor:
                 current_state = ctx.video_processor.latest_state
-                current_time = time.time()                
+                current_time = time.time()
                 
                 with emotion_placeholder.container():
                     if current_state in ["Confused", "Frustrated"]:
@@ -113,25 +114,38 @@ elif page == "MindSync Engine":
                         st.warning(f"## {current_state} 👀")
                     else:
                         st.info(f"## {current_state} 😐")
-                               
+                
                 if current_state == "Focused":
-                    st.session_state.focus_frames += 1
-                    if st.session_state.focus_frames > st.session_state.max_focus_frames:
-                        st.session_state.max_focus_frames = st.session_state.focus_frames
+                    if st.session_state.focus_start_time is None:
+                        st.session_state.focus_start_time = current_time
+                    st.session_state.unfocused_start_time = None  
+                    
+                    current_streak = int(current_time - st.session_state.focus_start_time)
+                    if current_streak > st.session_state.max_focus_time:
+                        st.session_state.max_focus_time = current_streak
                 else:
-                    st.session_state.focus_frames = 0
-                
-                current_streak_sec = st.session_state.focus_frames // 20
-                max_streak_sec = st.session_state.max_focus_frames // 20
-                streak_placeholder.metric("Consecutive Focus", f"{current_streak_sec} sec", f"High Score: {max_streak_sec} sec")
-                
+                    if st.session_state.unfocused_start_time is None:
+                        st.session_state.unfocused_start_time = current_time
+                                            
+                    if (current_time - st.session_state.unfocused_start_time) > 1.5:
+                        st.session_state.focus_start_time = None
+                        current_streak = 0
+                    else:                        
+                        if st.session_state.focus_start_time is not None:
+                            current_streak = int(current_time - st.session_state.focus_start_time)
+                        else:
+                            current_streak = 0
+               
+                with streak_placeholder.container():
+                    st.metric("Consecutive Focus", f"{current_streak} sec", f"High Score: {st.session_state.max_focus_time} sec")
+               
                 if len(st.session_state.session_log) == 0 or (current_time - st.session_state.session_log[-1]["timestamp"] >= 1.0):
                     st.session_state.session_log.append({
                         "timestamp": current_time,
                         "time_elapsed": round(current_time - st.session_state.session_start_time, 1),
                         "state": current_state
-                    })
-                                
+                    })                
+                
                 st.session_state.buffer.add_state(current_state)
                 needs_help, emotion = st.session_state.buffer.requires_intervention()
                 
@@ -161,12 +175,12 @@ elif page == "Session Analytics":
     
     if len(st.session_state.session_log) < 5:
         st.warning("Not enough data. Start the MindSync Engine and record a session for at least a few seconds!")
-    else:        
+    else:
         df = pd.DataFrame(st.session_state.session_log)
         
         emotion_weights = {"Focused": 3, "Neutral": 2, "Distracted": 1, "Confused": 0, "Frustrated": 0}
         df["Cognitive Score"] = df["state"].map(emotion_weights)
-               
+        
         total_time = df["time_elapsed"].max()
         focus_time = len(df[df["state"] == "Focused"]) 
         
@@ -177,15 +191,16 @@ elif page == "Session Analytics":
         
         st.write("---")
         st.markdown("### 🧠 Cognitive Load Timeline")
-        st.markdown("*3 = Focused | 2 = Neutral | 1 = Distracted | 0 = Friction*")       
-      
+        st.markdown("*3 = Focused | 2 = Neutral | 1 = Distracted | 0 = Friction*")
+        
         chart_data = df.set_index("time_elapsed")[["Cognitive Score"]]
         st.area_chart(chart_data, color="#4CAF50")
         
         if st.button("Reset Session Data"):
             st.session_state.session_log = []
             st.session_state.session_start_time = time.time()
-            st.session_state.focus_frames = 0
-            st.session_state.max_focus_frames = 0
+            st.session_state.focus_start_time = None
+            st.session_state.unfocused_start_time = None
+            st.session_state.max_focus_time = 0
             st.session_state.interventions_triggered = 0
             st.rerun()
