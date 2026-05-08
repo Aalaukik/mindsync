@@ -11,6 +11,9 @@ from src.llm_orchestrator import MindSyncOrchestrator
 
 if "buffer" not in st.session_state:
     st.session_state.buffer = CognitiveBuffer()
+else:    
+    if not hasattr(st.session_state.buffer, 'buffer') or st.session_state.buffer.buffer.maxlen != 20:
+        st.session_state.buffer = CognitiveBuffer()
 if "orchestrator" not in st.session_state:
     st.session_state.orchestrator = MindSyncOrchestrator()
 if "current_nudge" not in st.session_state:
